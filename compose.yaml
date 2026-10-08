@@ -1,0 +1,148 @@
+# SOFIX local development stack, run from this folder: docker compose up -d
+# (--build only when a package.json changes; the Node source is mounted, see below).
+#
+#   backend        sofix-ui-be, the app's API                    :8090
+#   engine         sofix-mock-backend, the Mock Engine           :8091
+#   postgres       the app's database (sofix/sofix)              :5433
+#   oems-postgres  the FIX OEMS database (oems/oems)             :5434
+#
+# The FIX OEMS itself (sofix-oems) runs on the host: ./mvnw -pl oems-app -am spring-boot:run
+# (port 8095); the backend reaches it via host.docker.internal.
+# Settings come from the environment or a .env file next to this one (see sofix-ui-be/README.md).
+# Credentials are for local use only; real environments take them from a secrets manager.
+services:
+  backend:
+    build: ./sofix-ui-be
+    image: sofix-ui-be
+    # Forwards Ctrl+C / docker stop to Node, so the container stops at once.
+    init: true
+    ports:
+      - '${PORT:-8090}:8090'
+    environment:
+      PORT: 8090
+      ENGINE_URL: http://engine:8091
+      OEMS_URL: ${OEMS_URL:-http://host.docker.internal:8095}
+      DATABASE_URL: postgres://${POSTGRES_USER:-sofix}:${POSTGRES_PASSWORD:-sofix}@postgres:5432/${POSTGRES_DB:-sofix}
+      ALLOWED_ORIGIN: ${ALLOWED_ORIGIN:-*}
+      ENABLE_TEST_API: ${ENABLE_TEST_API:-0}
+      # Sign-in. The app's URL (SSO returns there), the first admin's password, and SSO:
+      # by default the engine's mock identity provider (development only); for a real one
+      # (Entra ID, Okta, Google…) set OIDC_ISSUER, OIDC_CLIENT_ID, OIDC_CLIENT_SECRET and
+      # OIDC_PROVIDER_NAME, and leave OIDC_BACKCHANNEL_URL empty.
+      APP_URL: ${APP_URL:-http://localhost:4200}
+      INITIAL_ADMIN_PASSWORD: ${INITIAL_ADMIN_PASSWORD:-sofix-admin}
+      SESSION_HOURS: ${SESSION_HOURS:-12}
+      OIDC_ISSUER: ${OIDC_ISSUER-http://localhost:8091}
+      OIDC_CLIENT_ID: ${OIDC_CLIENT_ID:-sofix}
+      OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET:-sofix-dev-secret}
+      OIDC_PROVIDER_NAME: ${OIDC_PROVIDER_NAME:-Mock SSO}
+      OIDC_REDIRECT_URI: ${OIDC_REDIRECT_URI:-http://localhost:8090/api/auth/sso/callback}
+      OIDC_BACKCHANNEL_URL: ${OIDC_BACKCHANNEL_URL-http://engine:8091}
+    extra_hosts:
+      # Makes host.docker.internal work on Linux too (Docker Desktop provides it already).
+      - 'host.docker.internal:host-gateway'
+    # The source is mounted over the image's copy, so code changes need no rebuild (only
+    # `docker compose restart backend`); rebuild only when dependencies change.
+    volumes:
+      - ./sofix-ui-be/src:/app/src:ro
+      - ./sofix-ui-be/db:/app/db:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      engine:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://localhost:8090/api/health').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    restart: unless-stopped
+
+  engine:
+    build: ./sofix-mock-backend
+    image: sofix-mock-engine
+    init: true
+    # Published only for debugging (e.g. `npm run listen` in sofix-mock-backend); the app
+    # never calls it.
+    ports:
+      - '${ENGINE_PORT:-8091}:8091'
+    environment:
+      PORT: 8091
+      ORDER_INTERVAL_MS: ${ORDER_INTERVAL_MS:-0}
+      MANIPULATION_RATE: ${MANIPULATION_RATE:-0.3}
+      ENGINE_DELAY_MS: ${ENGINE_DELAY_MS:-150}
+      SPEC_CHUNK_MS: ${SPEC_CHUNK_MS:-900}
+      TEST_CASES_DELAY_MS: ${TEST_CASES_DELAY_MS:-1500}
+      ENABLE_TEST_API: ${ENABLE_TEST_API:-0}
+      # The mock identity provider's issuer, as the browser reaches it.
+      OIDC_PUBLIC_URL: http://localhost:${ENGINE_PORT:-8091}
+    volumes:
+      - ./sofix-mock-backend/src:/app/src:ro
+      - ./sofix-mock-backend/scripts:/app/scripts:ro
+      # The FIX message logs (inbound.log, outbound.log), readable on the host.
+      - ./sofix-mock-backend/logs:/app/logs
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://localhost:8091/api/health').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    restart: unless-stopped
+
+  # The app's database (owned by sofix-ui-be).
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-sofix}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sofix}
+      POSTGRES_DB: ${POSTGRES_DB:-sofix}
+    # Published so `npm start` outside Docker and database tools can reach it too.
+    ports:
+      - '${POSTGRES_PORT:-5433}:5432'
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  # The FIX OEMS database (owned by sofix-oems).
+  oems-postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: oems
+      POSTGRES_USER: oems
+      POSTGRES_PASSWORD: oems
+    ports:
+      # Host port 5434: 5432 (local PostgreSQL) and 5433 (the app's database) are taken.
+      - '${OEMS_DB_PORT:-5434}:5432'
+    volumes:
+      - oems-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U oems -d oems']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+# Both volumes keep the names they had under the earlier per-repository compose files,
+# so existing data carries over.
+volumes:
+  postgres-data:
+    name: sofix-mock-backend_postgres-data
+  oems-pgdata:
+    name: fix-oems_oems-pgdata

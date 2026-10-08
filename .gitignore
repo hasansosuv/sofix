@@ -1,0 +1,14 @@
+# The four repositories have their own git history; this repository holds only the
+# files shared by all of them (CLAUDE.md, compose.yaml, docs/design/).
+/sofix-ui-fe/
+/sofix-ui-be/
+/sofix-mock-backend/
+/sofix-oems/
+
+# Empty build folders an editor may still create at the old OEMS path.
+/fix-oems/
+
+# Local settings for compose.yaml.
+.env
+
+.DS_Store

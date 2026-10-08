@@ -1,0 +1,17 @@
+Read CLAUDE.md, CONTRIBUTING.md, docs/design/oems-design-v0.md and docs/design/skeleton-outline.md first.
+
+We are building sofix-oems like a painting: first the complete outline, then layer by layer. Your task now is ONLY the outline described in docs/design/skeleton-outline.md. Work on a new branch `feat/outline`, in small commits that follow CONTRIBUTING.md (Conventional Commits; each body says what changed, why, how to test).
+
+1. Show me `git status`, the current module structure and package names. Keep the existing project structure and package names; extend it, do not recreate it. Do not delete or overwrite anything without asking.
+2. Create every interface listed in section 3 of skeleton-outline.md, in the right module (ports in oems-application, pure logic in oems-domain, QuickFIX/J code only in oems-fix-qfj), plus the domain types listed under "Domain model in the outline".
+3. For each interface create the **default implementation** from the table, working and tested. Create the **placeholder implementations** too: they compile, have full Javadoc explaining what they will do in which layer, and either do nothing safely or throw a clear NotImplementedYetException.
+4. Make every extension point selectable by configuration (`sofix.extensions.*` and `sofix.action-mode.*` as in section 1), using @ConditionalOnProperty with the default implementation as matchIfMissing. Log the active implementation of every extension point at startup.
+5. Wire the inbound pipeline in section 2: QuickFIX/J Application → ring buffer → single order-engine thread → each step in order. The ActionModeResolver check must run for every action (ack, fill, cancel, replace, reject) and route to AutoActionHandler or ManualActionHandler.
+6. Default behaviour with no extra config: NewOrderSingle → Ack (39=0) → full Fill (39=2) at the order price; unknown OrigClOrdID → OrderCancelReject (CxlRejReason=1).
+6b. Include the JobScheduler / ScheduledJob extension point (section 3): SpringJobScheduler as default with cron + zone from `sofix.jobs.*`, and DoneForDayJob and ExpireOrdersJob as placeholders, disabled by default. Jobs must submit commands into the engine ring buffer (never change order state directly) and pass through ActionModeResolver. Add an admin-only way to list jobs and trigger one manually (log-only for now).
+6c. Include the buy-side placeholders from section 2b and the buy-side rows of section 3 (OrderEntryService, OutboundOrderBuilder, ExecutionReportProcessor, AllocationService): interfaces + placeholder implementations only, routed by session role (SELL_SIDE / BUY_SIDE). No buy-side behaviour yet beyond logging.
+6d. Include every interface in section 2c (business and platform capabilities) with the default implementation listed there. Placeholders compile, are documented, are wired by configuration, and are safe no-ops. PositionKeeper (in memory, from fills), IdGenerator, TimeProvider and TradingCalendar defaults must actually work and have unit tests. Fill events and job events must already be published so these services can subscribe to them.
+7. Write the acceptance tests in section 4 (a QuickFIX/J test initiator talking to the app's acceptor over localhost), including the manual-fill case.
+8. Follow the coding standards: class header Javadoc (purpose, collaborators, threading, allocation), Javadoc on every method, meaningful names, error codes, no swallowed exceptions.
+
+Finish by running `./mvnw verify` and show me the result, the commit list, and a table of every extension point with its active implementation.
