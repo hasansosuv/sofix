@@ -47,8 +47,8 @@ Every order stores `client_id` (never null once accepted), copied onto its messa
 ## 2. Identifying the user of an inbound order
 
 * Users are all the owner's, so there is **one user namespace**. The earlier concern ("the same user name in two companies") no longer applies: 116 (and the alternative tags) is looked up in one alias table, aliases unique across the application (optionally per session). The alias table needs no company column.
-* Order of resolution stays as in test-routing-by-user-tag.md: order chain → configured tags → onNoMatch.
-* **PROD (Roma, 2026-10-10):** on client orders 116 is the client's own trader, so our user comes from another tag, e.g. **57 TargetSubID** or **129 DeliverToSubID**. This is just the per-session ordered tag list already designed (test-routing-by-user-tag.md section 2), e.g. PROD session: primary 57, alternative 129; UAT certification session: primary 116. 116 is always stored and shown as the client trader.
+* Order of resolution stays as in routing-inbound-order-to-user.md: order chain → configured tags → onNoMatch.
+* **PROD (Roma, 2026-10-10):** on client orders 116 is the client's own trader, so our user comes from another tag, e.g. **57 TargetSubID** or **129 DeliverToSubID**. This is just the per-session ordered tag list already designed (routing-inbound-order-to-user.md section 2), e.g. PROD session: primary 57, alternative 129; UAT certification session: primary 116. 116 is always stored and shown as the client trader.
 * onNoMatch stays configurable per session: REJECT ("User details missing"), UNASSIGNED, or COVERAGE (attribute to the users covering the client, section 3 #7). Proposed default: REJECT on UAT, COVERAGE on PROD, so a real client order is never rejected only because the broker-user tag is missing.
 
 ## 3. Client company data

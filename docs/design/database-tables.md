@@ -47,7 +47,7 @@ Reflects today's decisions: one application owner, all users belong to the owner
 
 | # | Table | What it holds |
 |---|---|---|
-| 8 | `user_identity_alias` | Values in 116 / 57 / 129 that map to one of our users (test-routing-by-user-tag.md) |
+| 8 | `user_identity_alias` | Values in 116 / 57 / 129 that map to one of our users (routing-inbound-order-to-user.md) |
 
 (User names, roles and teams stay in `ui`; the engine only gets the user id and permissions in the BFF token.)
 

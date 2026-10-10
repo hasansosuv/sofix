@@ -25,7 +25,7 @@ Requirement (Ahmed, 2026-10-08): the buy side needs templates for the messages i
 | Kind | Who sets it | User can change? | Examples |
 | --- | --- | --- | --- |
 | **Engine (locked)** | The engine | Never | 11 ClOrdID (format configurable, uniqueness guaranteed by the engine), 41 OrigClOrdID, 37 OrderID on F/G (from the broker's ER), 60 TransactTime, 555 leg count, 70 AllocID, header tags |
-| **Identity (locked)** | The engine, from the logged-in user | Never | 116 OnBehalfOfSubID = user's email or chosen alias (tag configurable per session). This is what lets the returning message be matched to the user (test-routing-by-user-tag.md, flow A). |
+| **Identity (locked)** | The engine, from the logged-in user | Never | 116 OnBehalfOfSubID = user's email or chosen alias (tag configurable per session). This is what lets the returning message be matched to the user (routing-inbound-order-to-user.md, flow A). |
 | **Carried from the order (locked)** | Current version of our order | Never on Cancel; on Replace only the fields the template marks _amendable_ | 55, 54, 1, 167, 200/541/201/202 on F and G |
 | **Order ticket input** | The user on the order ticket in the UI | Yes, within the template's rules | 55 Symbol, 54 Side, 38 OrderQty, 40 OrdType, 44 Price, 99 StopPx, 59 TimeInForce, 126 ExpireTime, 1 Account, legs (600-624) |
 | **Template value** | Fixed value or expression | Yes, by template editors | 21 HandlInst = 1, 100 ExDestination, 528 OrderCapacity, 15 Currency, 18 ExecInst, custom tags |

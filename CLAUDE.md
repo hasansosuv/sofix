@@ -23,7 +23,7 @@ Current phase: build the **outline** (every component as an interface with a def
 - `starter-vs-plain-quickfixj.md`: why no QuickFIX/J Spring Boot starter
 - `application-scope-and-tenancy.md`: one owner, all users are the owner's; companies are clients; dedicated vs hub (NYFIX/Autex) sessions; order visibility; buy-side SaaS (proposed, section 7)
 - `session-configuration.md`: FIX settings vs business settings per session
-- `environments-and-promotion.md`: UAT / PROD and config promotion
+- `environment-and-promotion.md`: UAT / PROD and config promotion
 - `buy-side-message-templates.md`: outbound order templates (buy side, later)
 - `order-hierarchy.md`: parent / child orders
 - `order-lifecycle-and-persistence.md`: id tags per message type, correlation, busts/corrections, storage, persistence by TIF, crash recovery
