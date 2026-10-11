@@ -1,6 +1,8 @@
 # Moving the Mock Engine into sofix-oems (plan, draft 2026-10-08)
 
-Status: **proposed, not started.** The decisions at the end are open.
+Status: **in progress.** Certification specifications and test cases moved (2026-10-11, see
+"Progress"); orders, test runs and mock SSO are still on the Mock Engine. The decisions at the
+end are open.
 
 `sofix-mock-backend` (the "Mock Engine", Node.js, about 1,760 lines) stands in for this
 service today. `sofix-ui-be` (the Node BFF) forwards order, certification and test-run calls
@@ -48,11 +50,31 @@ Engine's functionality here, following `CLAUDE.md` and `skeleton-outline.md`:
   order events, as `startOemsSessionLink` already does for sessions.
 - `compose.yaml`: the `engine` service is removed, or kept only as the IdP.
 
+## Progress
+
+**2026-10-11: specifications and test cases (steps 1, 2 and the certification part of 6).**
+Branch `feat/certification-specs` in `sofix-oems` and `sofix-ui-be`.
+
+* Changed from the plan (Roma, 2026-10-11): no ATDL reader or test case generator yet. The OEMS
+  returns **stored copies**: the Mock Engine's 15 strategies and 71 test cases, copied for
+  Broker1 to Broker5 with the broker appended to each strategy name (`AUCTION_AMER_Broker1`;
+  the wire value stays `AUCTION`). The uploaded file's **name** picks the broker: it must start
+  with the broker code, in any letter case (`Broker3-spec.pdf`). Any other name is refused with
+  OEMS-CRT-0001 (404), reported to the user. The simulated delays stay (900 ms per chunk, 1.5 s
+  for test cases).
+* `SpecificationCatalog` port with `ClasspathSpecificationCatalog` as the default
+  (`sofix.extensions.specification-catalog: classpath`); a generator or the `atdl_spec` table can
+  replace it later without touching the rest.
+* `sofix-ui-be` forwards `POST /api/certifications/{id}/{specification|test-cases}` to the OEMS;
+  `POST /api/certifications` (unused by the app) still goes to the Mock Engine.
+* Details: `sofix-oems/docs/how-it-works/certification-specifications.md`.
+
 ## Order of work (small commits, `./mvnw verify` green at each)
 
-1. Test case domain model, ATDL reader and generator, with tests. The built-in strategies must
-   still give 71 test cases (`AUCTION_AMER` 4, `NAVIGATOR_AMER` 6, `SONAR_EMEA` 6, …).
-2. Certification endpoints: the streamed spec conversion and test case generation.
+1. ~~Test case domain model~~ (done); ATDL reader and generator later, replacing the stored
+   copies. The built-in strategies must still give 71 test cases (`AUCTION_AMER` 4,
+   `NAVIGATOR_AMER` 6, `SONAR_EMEA` 6, …).
+2. ~~Certification endpoints: the streamed spec conversion and test case generation.~~ Done.
 3. Orders: order book, recording incoming orders, commands, snapshot, order events.
 4. Test runs: manipulator, evaluator, `POST /api/test-runs`.
 5. e2e control API under the `e2e` profile.
