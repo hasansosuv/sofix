@@ -76,6 +76,7 @@ How a request works:
 
 1. The user logs in to the BFF; the BFF knows their id, groups and roles.
 2. For each call to sofix-oems, the BFF sends a short-lived signed token containing `userId`, `groupIds`, `roles`.
+   *Today (2026-10-11), not signed yet:* the BFF sends `X-OEMS-User` and, for orders, `X-OEMS-Orders-View` / `X-OEMS-Orders-Act` (whose orders the caller may see / act on); the OEMS trusts them. See `docs/features/order-visibility.md` §5.
 3. sofix-oems verifies the token and filters every query: `owner_user_id = me OR visibility = PUBLIC OR (visibility = GROUP AND group_id IN my groups)`. Admins see everything.
 4. The BFF adds display names (from the `ui` database) before sending results to the browser.
 

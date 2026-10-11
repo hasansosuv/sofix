@@ -23,7 +23,7 @@ Reflects today's decisions: one application owner, all users belong to the owner
 | 7 | `permission` | Catalogue of permissions (orders.view.own, orders.view.clients, orders.act.all, sessions.manage, …) |
 | 8 | `role_permission` | Which permissions a role has |
 | 9 | `user_role` | Which roles a user has |
-| 10 | `user_visibility_scope` | Extra scopes an admin assigns: "this manager sees users A1, A2, A3" or "team X" |
+| 10 | `user_visibility_scope` | Extra scopes an admin assigns: "this manager sees users A1, A2, A3" or "team X" ; **built as `order_access_grant`** (grantee, owner, can_act), per user only, see `docs/features/order-visibility.md` |
 | 11 | `workspace_layout` | Saved panel layouts and workspaces per user (and shared ones) |
 | 12 | `user_preference` | Theme, time zone, blotter columns, child-order display, default filters |
 | 13 | `saved_filter` | Named blotter filters |
