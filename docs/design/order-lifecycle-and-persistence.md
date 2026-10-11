@@ -71,6 +71,8 @@ Small correction to the message: 37 does not contain 11. They are two separate i
 | `execution` | Every fill, bust and correction with 17 / 19 links | Positions, bust/correct, reports |
 | `order_event` | Every change to an order with actor CLIENT / TRADER / AUTO / BROKER (next broker, on street children) / SYSTEM, event type, state after, reason, user id, link to the FIX message; rejected requests recorded too | Lifecycle view, audit |
 
+*Built (Phase A, 2026-10-11): the client-side lifecycle view and Message Details on the in-memory orders; see `docs/features/order-lifecycle.md`.*
+
 **Lifecycle view**: clicking an order loads all rows with that orderKey (and its children's) ordered by an internal event sequence number (not timestamps, which can tie): New → Ack → Partial → Amend request → Amend ack → Partial → … → Fill → Bust → Correct, each expandable to the raw FIX message, and rejected requests shown too (e.g. the G with unknown 41).
 
 Both sides in one view (Roma, 2026-10-10): the client order's messages (client session) and all its children's messages (next broker's session, our outbound D/F/G and their ERs, linked because their ERs echo our child ClOrdID in 11) are merged into one timeline with columns side (CLIENT / STREET), direction, session, message. Default layout (Roma, 2026-10-10): **two panels side by side**, Client side (left) and Street side (right, with a child selector: all children or one), rows aligned by time so a broker fill and the client fill it produced sit on the same line; clicking a row highlights the linked row on the other side. A toggle switches to the single merged timeline. Anyone allowed to see the client order sees its street messages.
