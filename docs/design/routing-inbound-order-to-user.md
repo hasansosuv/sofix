@@ -4,6 +4,27 @@ Requirement (Roma, 2026-10-08): several users are logged in at the same time. Ea
 
 ---
 
+## Status (2026-10-11)
+
+What is built so far (sofix-ui-be and sofix-ui-fe, branch `feat/user-ownership`):
+
+* **Username and status** on every user (ui database, `app_user`). The username is unique,
+  lower-case, and is the user's **default identity value**: the value an inbound tag (116, or
+  the session's alternatives) is matched against, before any extra aliases. INACTIVE users
+  cannot sign in.
+* **Flow A, outbound part:** Buy-Side Simulator orders carry **116 = the signed-in user's
+  username**, set by the app and not editable. Which tag carries the identity is fixed to 116
+  for now; it becomes a per-session business setting (session-configuration.md section 3,
+  "User identification").
+* **What a user makes is theirs** (`owner_user_id`): certifications, Specification History,
+  saved test cases, test runs and layouts. A user sees and runs only their own;
+  administrators see everyone's certifications and specs. This data still lives in the **ui**
+  database (sofix-ui-be). It moves to the `oems` database with `owner_user_id` + `visibility`
+  as planned (components-and-data-ownership.md section 3; mock-engine-migration.md decision 2).
+* Not built yet: the inbound side (resolving 116 / alternatives through `user_identity_alias`
+  in the OEMS), test evaluation per resolved user, and orders attributed to users on the
+  blotter (section 8).
+
 ## 0. Where test execution fits (Roma, 2026-10-08)
 
 Test cases are one feature of a bigger OEMS. Every session has three independent settings:
