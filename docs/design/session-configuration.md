@@ -35,11 +35,28 @@ Required at creation (they decide which pipeline the session uses): **Role** (SE
 | **Allowed asset classes** | Equity, Future, Option, Multileg, Fixed Income. Order in a disallowed class → ER Rejected (39=8, 58 "Asset class not allowed") | ✓ | ✓ |
 | Allowed order types / TIFs | Quick lists (Market, Limit, Stop…; DAY, GTC, IOC…). Detailed checks live in the rule set | ✓ | ✓ |
 | **Message templates** | Template set per asset class (grid: message type × asset class, inherited cells marked), single-cell overrides | ERs | D, AB, F, G, AC, J |
-| Handling mode | Manual / auto per action (ack, reject, fill, cancel, replace, DFD, expire), kill switch to full manual | ✓ | (later: auto-cancel on disconnect etc.) |
+| Handling mode | Manual / auto **per incoming message** (D, G, F; default Manual), auto with a lifecycle and fill plan (see below), kill switch to full manual (later) | ✓ | (later: auto-cancel on disconnect etc.) |
 | Validation | Rule set (Retail / Institutional / Simulator / custom) | ✓ | pre-trade rule set |
 | **Testing** | Run test cases on/off (**UAT only**; hidden and refused on PROD) | ✓ | ✓ |
 | User identification | Primary tag + Alternative 1, 2… (header/body), behaviour on no match | inbound | outbound identity tag (116) |
 | Other | Throttle (max msgs/sec), drop copy target session, symbology mapping, trading calendar, ClOrdID format (buy side), ATDL files (buy side) | ✓ | ✓ |
+
+**Decided and built (Roma, 2026-10-11): handling per incoming message.**
+
+* The handling mode is set **per incoming application message type**, not per action: today 35=D (NewOrderSingle), 35=G (OrderCancelReplaceRequest) and 35=F (OrderCancelRequest). The list is fixed in code (`ConfigurableMessageType` in sofix-oems); the user adds a message from that list and sets its mode. Session-level messages (Logon, Heartbeat, TestRequest, ResendRequest, SequenceReset, Reject 35=3, Logout) are handled by QuickFIX/J and are never configurable.
+* **Default: MANUAL for every message**; a message not listed is MANUAL.
+* **AUTO** opens a dialog that defines the lifecycle:
+
+| Message | AUTO lifecycle |
+|---|---|
+| D | Pending New (39=A, optional) → delay → Ack (39=0) → fills: a trader, or automatic |
+| G | Pending Replace (39=E, optional) → delay → Replaced → fills: a trader, or automatic |
+| F | Pending Cancel (39=6, optional) → delay → Canceled (no fills) |
+
+* Automatic fills: up to **N % of the quantity** (what is filled counts; after a replace, of the new quantity) in **S steps**, **T ms apart**, at the order's limit price, or a set price for market orders. "Fill completely in 4 steps" = 100 % / 4; "half, then stop" = 50 % / 1, leaving quantity to replace.
+* **Identity tag** (default 116) is a business setting too: the tag that carries the user's username on orders we send.
+* Stored in the `oems` database (`session_business_config`, `session_message_mode` with the lifecycle as JSON), edited in the **Session Business Configuration** panel, audited in the session audit trail. The engine follows the settings once order handling runs in the OEMS (sofix-oems `docs/how-it-works/session-business-config.md`).
+* Later, on the same shape: per-user settings and admin locks (execution-report-templates.md §8b), and more message types.
 
 ## 4. Where this sits in the engine
 

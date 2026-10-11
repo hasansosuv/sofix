@@ -133,6 +133,10 @@ Rules:
 * **Runtime switch**: an ops user can flip a session (or all sessions) to full manual instantly from the UI, a kill switch for automation, without restart. The change is audited.
 * **Visible**: the blotter shows which actions on an order were automatic, and the metrics show auto vs manual counts.
 
+### 8a. What is built: per incoming message (Roma, 2026-10-11)
+
+The session-level part of this policy is built per **incoming message type** rather than per action: each of 35=D, G, F is MANUAL (default) or AUTO, and AUTO carries a lifecycle that bundles the actions above (pending report, ack / accept, then fills with percent, steps and interval). The cancel/replace AUTO_REJECT option, Done For Day, Expire and Escalate are not configurable yet. Details: session-configuration.md §3.
+
 ### 8b. Per-user settings (Roma, 2026-10-10)
 
 Manual or auto is decided **per user** as well: on the same session, orders resolved to user A can be auto-acked while orders for user B wait for a manual ack. Each user sets their own preference per action (ack, fill, cancel, replace, …) on their settings screen, optionally narrowed to a session or a client.
