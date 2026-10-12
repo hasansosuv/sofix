@@ -9,6 +9,8 @@
 #   postgres  one PostgreSQL server with two databases (sofix for the backend, oems)   :5433
 #   db-init   one-shot job: creates the databases and users when missing
 #
+# DEPLOYMENT_MODE (SELL_SIDE or BUY_SIDE) says which side this stack serves; run a second stack
+# for the other side (docs/deployment/docker.md, 2.6).
 # Everything is configurable with environment variables (a .env file next to this one, or the
 # shell); docs/deployment/docker.md explains each one. Defaults suit one machine; for a server,
 # set at least PUBLIC_URL and the passwords.
@@ -77,6 +79,7 @@ services:
       db-init:
         condition: service_completed_successfully
     environment:
+      SOFIX_DEPLOYMENT_MODE: ${DEPLOYMENT_MODE:-SELL_SIDE}
       OEMS_HTTP_PORT: 8095
       OEMS_DB_URL: jdbc:postgresql://${OEMS_DB_HOST:-postgres}:${OEMS_DB_PORT:-5432}/${OEMS_DB_NAME:-oems}${OEMS_DB_URL_PARAMS:-}
       OEMS_DB_USER: ${OEMS_DB_USER:-oems}
@@ -116,6 +119,7 @@ services:
         # The backend waits for the OEMS on its own (and tells the app while it is down).
         condition: service_started
     environment:
+      DEPLOYMENT_MODE: ${DEPLOYMENT_MODE:-SELL_SIDE}
       PORT: 8090
       OEMS_URL: ${OEMS_URL:-http://oems:8095}
       DATABASE_URL: postgres://${UI_DB_USER:-sofix}:${UI_DB_PASSWORD:-sofix}@${UI_DB_HOST:-postgres}:${UI_DB_PORT:-5432}/${UI_DB_NAME:-sofix}${UI_DB_URL_PARAMS:-}

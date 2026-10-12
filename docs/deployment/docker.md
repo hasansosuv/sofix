@@ -101,12 +101,12 @@ Passwords inside `DATABASE_URL` must be URL-safe (avoid `@ : / ? #`, or percent-
 | The OEMS | `docker compose up -d postgres db-init backend ui` | `cd sofix-oems && OEMS_DB_URL=jdbc:postgresql://localhost:5433/oems java -jar oems-app/target/oems-app-0.1.0-SNAPSHOT.jar` | `OEMS_URL=http://host.docker.internal:8095` in `.env` |
 | The backend | `docker compose up -d postgres db-init oems` | `cd sofix-ui-be && DATABASE_URL=postgres://sofix:sofix@localhost:5433/sofix OEMS_URL=http://localhost:8095 npm start` | `OEMS_BIND`: keep 127.0.0.1 (published) |
 
-### 2.6 A second OEMS (e.g. buy side) on the same machine
+### 2.6 A buy-side stack next to the sell side, on the same machine
 
-Run a second project with its own name, ports and volumes:
+Run a second project with its own mode, name, ports and volumes:
 
 ```bash
-COMPOSE_PROJECT_NAME=sofix-buy UI_HOST_PORT=8180 BACKEND_HOST_PORT=8190 OEMS_HOST_PORT=8195 \
+DEPLOYMENT_MODE=BUY_SIDE COMPOSE_PROJECT_NAME=sofix-buy UI_HOST_PORT=8180 BACKEND_HOST_PORT=8190 OEMS_HOST_PORT=8195 \
 POSTGRES_HOST_PORT=5533 FIX_PORT_RANGE=9970-9999 POSTGRES_VOLUME=sofix-buy_postgres-data \
 OEMS_FIX_DATA_VOLUME=sofix-buy_oems-fix-data OEMS_LOGS=./logs/oems-buy \
 docker compose up -d
@@ -123,6 +123,7 @@ after changing it (compose recreates the containers whose settings changed).
 
 | Variable | Default | Meaning |
 |---|---|---|
+| `DEPLOYMENT_MODE` | `SELL_SIDE` | Which side this stack serves: `SELL_SIDE` (a broker answering client orders) or `BUY_SIDE` (companies sending orders to brokers). Passed to the OEMS (`sofix.deployment.mode`) and the backend; the app shows that side's panels |
 | `COMPOSE_PROJECT_NAME` | `sofix` | Name of the stack: containers are `sofix-<service>-1`, the network `sofix_default` |
 | `RESTART_POLICY` | `unless-stopped` | `no`, `always`, `unless-stopped`, `on-failure` for ui, backend, oems, postgres |
 | `DOCKER_LOG_MAX_SIZE` / `DOCKER_LOG_MAX_FILES` | `20m` / `5` | Rotation of each container's stdout log (`docker compose logs`) |
