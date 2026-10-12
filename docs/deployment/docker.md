@@ -103,6 +103,8 @@ Passwords inside `DATABASE_URL` must be URL-safe (avoid `@ : / ? #`, or percent-
 
 ### 2.6 A buy-side stack next to the sell side, on the same machine
 
+To run the buy side from terminals instead (only its database in Docker): `local-buy-side.md`.
+
 Run a second project with its own mode, name, ports and volumes:
 
 ```bash
