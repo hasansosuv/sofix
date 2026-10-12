@@ -90,13 +90,31 @@ One application. The broker side is built first. The buy side (sending orders to
 * Added: `ClientCompany`, `ClientId`, `SessionType` (DEDICATED, HUB); `ClientResolver` (default `SessionClientResolver`, `HubTagClientResolver` for 115); `UserContextProvider` (current user from the BFF token).
 * `OwnedResource` keeps ownerUserId, visibility PRIVATE / GROUP / PUBLIC, groupId, sharedWithUserIds.
 
-## 7. Buy side: SOFIX as a SaaS OEMS (proposed 2026-10-10, awaiting Roma)
+## 7. Buy side (decided 2026-10-12, Ahmed)
 
-Roma, 2026-10-10: from the buy-side perspective SOFIX is a **SaaS OEMS** operated by SOSUV. Buy-side firms (asset managers, hedge funds) are customer companies; their users log in and send orders to their brokers. Users must not see other companies' orders, and by default not other users' orders in their own company.
+**Decisions (2026-10-12), replacing the 2026-10-10 proposal:**
 
-Here multi-tenancy is right, because the users now belong to the customers, not to the operator. Sections 0 to 6 (broker side, single owner) stay as decided.
+* **Deployment mode:** one codebase, deployed as `sofix.deployment.mode: SELL_SIDE | BUY_SIDE`
+  (not BROKER_DESK / BUY_SIDE_SAAS). One variable `DEPLOYMENT_MODE` in compose sets it for the
+  OEMS, the backend and the app. Each deployment has its own databases.
+* **Code layout:** every repository separates `common`, `sellside` (`sell-side`) and `buyside`
+  (`buy-side`) code by package / folder; only the active side's code is wired at start-up.
+* **SELL_SIDE** is sections 0 to 6 unchanged: one owner, users are the owner's, companies are
+  client records without login.
+* **BUY_SIDE:** customer **companies** with **users**. All companies share **one database**: no
+  database or schema per company, no `tenant_id`; every buy-side record carries `company_id`
+  and every query filters by it first. A user belongs to exactly one company.
+  * Platform admin (the all-access Admin role) creates companies and their first company admin.
+  * Company admin manages the users of its own company only.
+  * Visibility: **own** by default; **company** (everything of the user's company) by
+    permission. Nothing crosses companies.
+* The earlier `tenant_id` decision is dropped (CLAUDE.md updated).
+* Certification between the two sides: `test-case-certification.md`.
 
-### 7.1 Two deployments of the same build
+The 2026-10-10 proposal below is kept for its detail (company profile, visibility, reaching
+brokers); where it says tenant, read company (`company_id`).
+
+### 7.1 Two deployments of the same build (proposal, 2026-10-10)
 
 | | Broker desk deployment | Buy-side SaaS deployment |
 |---|---|---|
