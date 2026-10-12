@@ -1,8 +1,11 @@
 # Moving the Mock Engine into sofix-oems (plan, draft 2026-10-08)
 
-Status: **in progress.** Certification specifications and test cases moved (2026-10-11, see
-"Progress"); orders, test runs and mock SSO are still on the Mock Engine. The decisions at the
-end are open.
+Status: **done (2026-10-12).** The Mock Engine is retired and its repository folder deleted
+(history on GitHub, `hasansosuv/sofix-mock-fixengine`). Specifications and test cases (2026-10-11)
+and orders (2026-10-11) moved to the OEMS; mock SSO was switched off; the e2e order specs that
+used its test API were removed. **Test runs did not move**: running a test case is paused
+(503) until the OEMS sends real FIX orders on buy-side sessions. The text below is the plan as
+written.
 
 `sofix-mock-backend` (the "Mock Engine", Node.js, about 1,760 lines) stands in for this
 service today. `sofix-ui-be` (the Node BFF) forwards order, certification and test-run calls

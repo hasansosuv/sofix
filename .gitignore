@@ -2,7 +2,6 @@
 # files shared by all of them (CLAUDE.md, compose.yaml, docs/design/).
 /sofix-ui-fe/
 /sofix-ui-be/
-/sofix-mock-backend/
 /sofix-oems/
 
 # Empty build folders an editor may still create at the old OEMS path.
@@ -12,3 +11,6 @@
 .env
 
 .DS_Store
+
+# Host log folders of the Docker stack (OEMS_LOGS).
+/logs/
