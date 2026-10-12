@@ -25,19 +25,19 @@ services:
       DATABASE_URL: postgres://${POSTGRES_USER:-sofix}:${POSTGRES_PASSWORD:-sofix}@postgres:5432/${POSTGRES_DB:-sofix}
       ALLOWED_ORIGIN: ${ALLOWED_ORIGIN:-*}
       ENABLE_TEST_API: ${ENABLE_TEST_API:-0}
-      # Sign-in. The app's URL (SSO returns there), the first admin's password, and SSO:
-      # by default the engine's mock identity provider (development only); for a real one
-      # (Entra ID, Okta, Google…) set OIDC_ISSUER, OIDC_CLIENT_ID, OIDC_CLIENT_SECRET and
-      # OIDC_PROVIDER_NAME, and leave OIDC_BACKCHANNEL_URL empty.
+      # Sign-in: password only. SSO is off (2026-10-12; the Mock Engine's identity provider is
+      # being retired). For a real provider (Entra ID, Okta, Google…) set OIDC_ISSUER,
+      # OIDC_CLIENT_ID, OIDC_CLIENT_SECRET and OIDC_PROVIDER_NAME in .env; the app then offers it.
+      # Locked out: docker compose exec backend node src/set-password.js <username>
       APP_URL: ${APP_URL:-http://localhost:4200}
       INITIAL_ADMIN_PASSWORD: ${INITIAL_ADMIN_PASSWORD:-sofix-admin}
       SESSION_HOURS: ${SESSION_HOURS:-12}
-      OIDC_ISSUER: ${OIDC_ISSUER-http://localhost:8091}
-      OIDC_CLIENT_ID: ${OIDC_CLIENT_ID:-sofix}
-      OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET:-sofix-dev-secret}
-      OIDC_PROVIDER_NAME: ${OIDC_PROVIDER_NAME:-Mock SSO}
+      OIDC_ISSUER: ${OIDC_ISSUER:-}
+      OIDC_CLIENT_ID: ${OIDC_CLIENT_ID:-}
+      OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET:-}
+      OIDC_PROVIDER_NAME: ${OIDC_PROVIDER_NAME:-SSO}
       OIDC_REDIRECT_URI: ${OIDC_REDIRECT_URI:-http://localhost:8090/api/auth/sso/callback}
-      OIDC_BACKCHANNEL_URL: ${OIDC_BACKCHANNEL_URL-http://engine:8091}
+      OIDC_BACKCHANNEL_URL: ${OIDC_BACKCHANNEL_URL:-}
     extra_hosts:
       # Makes host.docker.internal work on Linux too (Docker Desktop provides it already).
       - 'host.docker.internal:host-gateway'
