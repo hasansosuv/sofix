@@ -1,83 +1,90 @@
 # Feature: Broker Settings (sell side)
 
-Status: first cut built 2026-10-13. sofix-oems `e2615c6`; sofix-ui-be `c9b67cc`;
-sofix-ui-fe `eb14d91`.
+Status: built 2026-10-13, reworked the same day into rules. sofix-oems `54885d9` `15a2d06`;
+sofix-ui-be `a0ecf78`; sofix-ui-fe `8872b89` (blotter From column `eb14d91`).
 
 ## 1. What the user does
 
-Broker Settings (FIX Sessions menu, sell side only). Changing anything needs **Edit** on the panel,
-which an administrator gives (Manage Rights); others see it read-only.
+Open Broker Settings from the FIX Sessions menu (sell side only). It shows a table of rules:
 
-1. **Unknown sender (all sessions)**: **Reject (39=8)** or **Accept and mark**. Applies at once.
-2. Pick a session (sessions with role Sell side), then:
-   - **User resolution tags**: up to 5 tags, tried in order, e.g. `129` DeliverToSubID then `57`
-     TargetSubID. Add, move up or down, remove.
-   - **Accepted senders**: the **sender tag** (e.g. `116` OnBehalfOfSubID or `50` SenderSubID)
-     and the values this session accepts, one per line. An empty list accepts everyone; an empty
-     tag means no check.
-   - **User aliases**: up to 3 per active user, e.g. the name the client's buy side uses for them.
-     An alias belongs to one user per session; a clash is shown on the row.
-3. **Save** (tags and senders, then aliases), **Discard**, or reload. Each change shows a success
-   notice; a failure goes to the bell and the Error Log.
+| Inbound Session | Sender: Tag | Sender: Values | Mapped to User Using: Tag | Mapped to User Using: Values | Mapped to User |
+|---|---|---|---|---|---|
+| Apex Capital (APEX) | 116 | john, anna | 129 | m.smith, mary.s | mary |
+| Apex Capital (APEX) | 116 | john | 129 | j.doe | jdoe |
 
-The Order Blotter has a **From** column: the order's sender, in amber with "unknown" when the
-session does not list it.
+- **Add Rule**, **Edit** and **Delete** are in the panel header. A double-click on a row also edits
+  it. Adding or editing opens a dialog with these fields:
+  - the inbound session;
+  - the sender: a tag and its comma-separated values, optional (empty means any sender);
+  - the user tag and its comma-separated values (1 to 3);
+  - the user.
+- The table can be filtered by session and searched.
+- **Unknown sender (all sessions)** sits above the table: **Reject (39=8)** or **Accept and mark**.
+- Changing anything needs **Edit** on the panel, which an administrator gives in Manage Rights.
+  Without it, the panel is view only.
+- Each change shows a success notice. A failure goes to the bell and the Error Log. The OEMS's
+  reason is also shown on the dialog's field.
+- The Order Blotter's **From** column shows the order's sender. A sender no rule of its session
+  lists is shown in amber with "unknown".
+
+A session can have rules for many users. Each order goes to the user whose rule matches its tag
+value.
 
 ## 2. How an order is attributed
 
 ```mermaid
 flowchart LR
-  A[New order D on a session] --> B{User resolution tags,<br/>in order}
-  B -->|value = alias of a user<br/>on this session| U[That user]
-  B -->|value = a username| U
-  B -->|no tag matches| R1[Reject 39=8<br/>58 User details missing]
-  U --> C{Sender tag set and<br/>senders listed?}
-  C -->|no| OK[Order shown to the user,<br/>answered per their User Preferences]
-  C -->|sender listed| OK
-  C -->|not listed| G{Unknown sender<br/>all sessions}
+  A[New order D on a session] --> S{The session's rules<br/>name senders?}
+  S -->|yes, sender not listed| G{Unknown sender<br/>all sessions}
   G -->|REJECT| R2[Reject 39=8<br/>58 Unknown sender 116=value]
-  G -->|ACCEPT| M[Order accepted,<br/>marked unknown on the blotter]
+  G -->|ACCEPT| U
+  S -->|no, or sender listed| U{Rules, oldest first:<br/>sender matches and<br/>user tag value listed}
+  U -->|match, user active| OK[Order shown to that user,<br/>answered per their User Preferences]
+  U -->|no match| F{Session identity tag<br/>value = a username?}
+  F -->|yes| OK
+  F -->|no| R1[Reject 39=8<br/>58 User details missing]
 ```
 
-- Aliases and usernames are compared trimmed and ignoring case. An alias counts only while its
-  user is active, i.e. among the users sofix-ui-be sends to the OEMS.
-- A session without Broker Settings uses its identity tag from Session Business Configuration
-  (default 116) and checks no senders. That field is no longer edited in the UI.
-- The sender is the value of the sender tag (116 when none is set) and is stored on the order.
-- Example: the buy side sends `116=john` (its trader) and `129=m.smith`. Set the tags to 129, 57,
-  the sender tag to 116 with `john` accepted, and the alias `M.Smith` for Mary. The order is
-  Mary's, and it comes from john.
+- Values are compared trimmed and ignoring case. A rule counts only while its user is active,
+  i.e. among the users sofix-ui-be sends to the OEMS.
+- A sender is unknown when the session has rules with senders and the order's sender matches none
+  of them. The shown sender is the value of the first such rule's sender tag (116 when there is
+  none).
+- If no rule matches, the identity tag of Session Business Configuration (default 116) is looked up
+  among the usernames, as before Broker Settings.
+- A value of a user tag can be mapped by only one rule per session for the same sender (the
+  OEMS refuses a second one, also for the same user).
 
 ## 3. Data
 
 | Data | Where |
 |---|---|
-| A session's tags, sender tag, accepted senders | sell OEMS DB, `broker_session_setting` (V11) |
-| Aliases | sell OEMS DB, `broker_user_alias` (session, alias, user id, username, position) |
-| Unknown sender action | sell OEMS DB, `broker_global_setting` (one row; REJECT when none) |
-| Users offered for aliases | UI DB, `app_user` (active), via backend `GET /api/broker-settings/users` |
+| Rules | sell OEMS DB, `broker_rule` (V12): session, sender tag, sender values, user tag, user values (JSON), user id, username |
+| Unknown sender action | sell OEMS DB, `broker_global_setting` (V11, one row; REJECT when none) |
+| Users offered in the dialog | UI DB, `app_user` (active), via backend `GET /api/broker-settings/users` |
 | Order's sender | in memory on the order; sent to the blotter as `sender`, `senderUnknown` |
-| Endpoints | backend `/api/broker-settings` (GET), `/sessions/{id}`, `/sessions/{id}/aliases`, `/global` (PUT) → OEMS |
+| Endpoints | backend `/api/broker-settings` (GET), `/rules` (POST), `/rules/{id}` (PUT, DELETE), `/global` (PUT) → OEMS |
 
-The OEMS keeps the settings in memory, reloads them after every change and when an order arrives on
-a session it does not know yet. No restart is needed.
+The OEMS keeps the rules in memory. It reloads them after every change, and when an order arrives
+on a session it does not know yet. No restart is needed. V12 replaced the V11 tables
+`broker_session_setting` and `broker_user_alias`, which existed for a few hours on 2026-10-13.
 
 ## 4. Enforced and tested
 
 | Rule | Where | Test |
 |---|---|---|
-| 1–5 tags, 1–99999, not a header tag, no duplicates, not the sender tag; at most 200 senders and 3 aliases; values ≤ 64 characters; one user per alias (OEMS-CFG-0006) | `BrokerSettingsValidator` | `BrokerSettingsValidatorTest`, `BrokerSettingsApiTest` |
-| First matching tag wins; alias or username; inactive alias ignored; unknown sender reject or mark | `BrokerSettingsService.attribute` | `BrokerSettingsServiceTest` |
+| Tags 1–99999 and not header tags; sender values need a sender tag; user tag ≠ sender tag; 1–3 user values; at most 200 sender values; values ≤ 64 characters, no duplicates; a user; one rule per value and sender (OEMS-CFG-0006); unknown rule (OEMS-CFG-0007, 404) | `BrokerSettingsValidator`, `BrokerSettingsService` | `BrokerSettingsValidatorTest`, `BrokerSettingsServiceTest`, `BrokerSettingsApiTest` |
+| Several users on one session; first matching rule; inactive user ignored; username fallback; unknown sender reject or mark | `BrokerSettingsService.attribute`, `BrokerRule.matches` | `BrokerSettingsServiceTest` |
 | Read needs View, change needs Edit on Broker Settings; sell side only | backend `permissions.js`, `SIDE_ROUTES` | manual check 2026-10-13 |
-| Whole flow over FIX: alias via 129, unknown sender rejected then accepted and marked, no user rejected; panel save and clash; From column | throwaway sell stack | manual check 2026-10-13 |
+| Whole flow over FIX and in the browser:<br/>- dialog add and refused clash<br/>- double-click edit, delete with confirmation<br/>- 129=mary.s → mary and 129=j.doe → jdoe on one session<br/>- unknown sender rejected; From column | throwaway sell stack | manual check 2026-10-13 |
 
 ## 5. Known limitations
 
-1. Cancels and replaces (F, G) are matched to the original order and keep its user. The sender of
-   the cancel or replace is not checked again.
-2. The sender check uses one tag per session. A sender list per user is not built.
-3. Aliases of a user who is made inactive stay stored and are shown as "Not active". They no longer
-   match.
-4. No history of changes beyond who saved last and when (and the OEMS audit log).
-5. The buy side has no Broker Settings; its user identity tag stays in its Session Business
+1. Cancels and replaces (F, G) are matched to the original order and keep its user. Their sender
+   is not checked again.
+2. Rules cannot be reordered; the oldest matching rule wins. Clashing rules are refused, so the
+   order only matters when a rule with no sender and one with a sender both match.
+3. A rule of a user who is made inactive stays in the table and no longer matches.
+4. There is no history of changes beyond who saved a rule last and when, plus the OEMS audit log.
+5. The buy side has no Broker Settings. Its user identity tag stays in its Session Business
    Configuration.
