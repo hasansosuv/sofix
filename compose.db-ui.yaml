@@ -1,0 +1,36 @@
+# A database UI (pgAdmin 4) for the SOFIX PostgreSQL servers, separate from the main stack.
+# Run in this folder:
+#
+#   docker compose -f compose.db-ui.yaml up -d      # then open http://localhost:5050
+#   docker compose -f compose.db-ui.yaml down       # stop it (its settings stay in a volume)
+#
+# Both servers are listed already (group SOFIX): the sell side's (:5433) and the buy side's
+# (:5533). They are reached through the host's ports, so whichever is running can be opened;
+# the password (default sofix) is asked once and can be saved. docs/deployment/database-ui.md.
+name: ${DB_UI_PROJECT_NAME:-sofix-db-ui}
+
+services:
+  pgadmin:
+    image: dpage/pgadmin4:${PGADMIN_VERSION:-9}
+    restart: ${RESTART_POLICY:-unless-stopped}
+    environment:
+      # Desktop mode: no pgAdmin sign-in (it is published on this machine only).
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: 'False'
+      # Still required by the image, even in desktop mode.
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@sofix.dev}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-sofix-admin}
+      PGADMIN_SERVER_JSON_FILE: /pgadmin4/servers.json
+      PGADMIN_LISTEN_PORT: 80
+    ports:
+      - '${PGADMIN_BIND:-127.0.0.1}:${PGADMIN_HOST_PORT:-5050}:80'
+    volumes:
+      - ./docker/pgadmin/servers.json:/pgadmin4/servers.json:ro
+      - pgadmin-data:/var/lib/pgadmin
+    extra_hosts:
+      # The PostgreSQL servers are published on the host (5433, 5533).
+      - 'host.docker.internal:host-gateway'
+
+volumes:
+  pgadmin-data:
+    name: ${PGADMIN_VOLUME:-sofix-db-ui_pgadmin-data}

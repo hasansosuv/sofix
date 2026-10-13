@@ -1,0 +1,24 @@
+{
+  "Servers": {
+    "1": {
+      "Name": "Sell side (Docker stack, :5433)",
+      "Group": "SOFIX",
+      "Host": "host.docker.internal",
+      "Port": 5433,
+      "MaintenanceDB": "postgres",
+      "Username": "sofix",
+      "SSLMode": "prefer",
+      "Comment": "The sell side's PostgreSQL: databases sofix (backend) and oems. Superuser sofix / sofix unless POSTGRES_SUPERUSER(_PASSWORD) is set in .env."
+    },
+    "2": {
+      "Name": "Buy side (project sofix-buy, :5533)",
+      "Group": "SOFIX",
+      "Host": "host.docker.internal",
+      "Port": 5533,
+      "MaintenanceDB": "postgres",
+      "Username": "sofix",
+      "SSLMode": "prefer",
+      "Comment": "The buy side's PostgreSQL (docker/buy-side-db.env): databases sofix (backend) and oems. Superuser sofix / sofix."
+    }
+  }
+}

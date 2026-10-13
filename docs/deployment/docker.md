@@ -215,6 +215,8 @@ docker compose exec -T postgres psql -U oems -d oems < oems-2026-10-12.sql   # r
 
 ## 5. Everyday commands
 
+A database UI (pgAdmin) for both PostgreSQL servers runs from its own file: `database-ui.md`.
+
 Loading new code after a change (both sides, step by step): `updating-and-restarting.md`.
 
 ```bash
