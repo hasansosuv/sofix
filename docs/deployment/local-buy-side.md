@@ -53,6 +53,8 @@ CompIDs mirrored (buy side sender = sell side target). Start both: they log on.
 
 ## Stop
 
+Loading new code after a change (both sides, step by step): `updating-and-restarting.md`.
+
 `Ctrl+C` in terminals 2–4; the database: `docker compose --env-file docker/buy-side-db.env stop`.
 Remove it with its data: `docker compose --env-file docker/buy-side-db.env down -v` (only the
 `sofix-buy` project's volume).
