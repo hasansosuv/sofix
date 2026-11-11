@@ -241,7 +241,7 @@ Provide this template as `.gitmessage` and set `git config commit.template .gitm
 
 ### 8.5 Branches and pull requests
 
-* One feature branch per layer or feature (`feat/order-lifecycle`), made of small commits.
+* For now, commit directly on `main` (Ahmed, 2026-11-12); a feature branch per layer or feature (`feat/order-lifecycle`) only when asked. Either way, small commits.
 * Before starting, list the planned commits (as in 8.2) and agree them.
 * Merge with rebase or a merge commit, **never squash**: the small commits are the documentation of how the feature was built.
 * PR description: What changed / Why / How it works / How to test (per test level) / Performance impact / Docs updated / Design links.

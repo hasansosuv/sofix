@@ -138,5 +138,5 @@ Inside each module, packages are split `common` / `sellside` / `buyside` (ArchUn
 - Build and test: `./mvnw verify` must pass before every commit (formatting, Checkstyle, SpotBugs, ArchUnit, tests).
 - Database tests use Testcontainers (Docker must be running). Local DB: `docker compose up -d postgres db-init` in this folder (PostgreSQL on 5433). The observability stack (`ops/observability/`) is not built yet.
 - Conventional Commits (`feat:`, `fix:`, `perf:`, `refactor:`, `test:`, `docs:`); the commit body says what changed, why, and how to test.
-- Small, focused commits on a feature branch. Ask before deleting files or changing an agreed decision.
+- Small, focused commits, directly on `main` for now (no feature branches unless Ahmed asks). Ask before deleting files or changing an agreed decision.
 - A feature also updates its `sofix-oems/docs/how-it-works/` page, its `docs/features/` page here, and the affected `sofix-oems/docs/developer/` pages (bump their "Verified against commit" line).
