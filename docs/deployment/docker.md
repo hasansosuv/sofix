@@ -264,3 +264,6 @@ The app's database (users, layouts, templates…) is already on the single serve
 3. HTTPS is left to a reverse proxy in front (2.3).
 4. `FIX_PORT_RANGE` must be decided up front: an acceptor on a port outside it is unreachable.
 5. Buy-Side Simulator test runs are paused (the Mock Engine that ran them is retired).
+6. Orders are kept in memory by the OEMS on both sides: `docker compose up -d --build oems` or a
+   restart of the `oems` container loses them (sessions, settings and users stay); see
+   `updating-and-restarting.md` section 7.

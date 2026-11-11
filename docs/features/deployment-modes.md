@@ -1,6 +1,8 @@
 # Feature: deployment modes (SELL_SIDE / BUY_SIDE) and the side-separated code
 
-Status: built 2026-10-12. Decision: `docs/design/application-scope-and-tenancy.md` §7.
+Status: built 2026-10-12; side tables updated 2026-11-12 for what was added since (buy-side
+orders, companies, Broker Settings, ER templates). Decision:
+`docs/design/application-scope-and-tenancy.md` §7.
 
 ## 1. What it is
 
@@ -9,13 +11,16 @@ One codebase, deployed as either side of the market. One setting decides which:
 | | SELL_SIDE (default) | BUY_SIDE |
 |---|---|---|
 | Who | A broker: receives client orders, answers with ExecutionReports | Buy-side companies: send orders to brokers |
-| Main panel | Order Blotter | Buy-Side Simulator |
-| Side-only panels | Order Blotter, Session Business Configuration | Buy-Side Simulator, Executable Test Cases, Test Case Result, FIX Message Template |
-| Side-only API (OEMS) | `/api/orders` (and actions, lifecycle, messages), `/api/sessions/{id}/business-config`, `/api/users/{id}/preferences`, test runs of incoming orders | (to come: test suites, sending test cases, results) |
-| Side-only API (backend) | business settings, broker actions on orders | templates, test runs |
+| Main panel (first layout) | Order Blotter (orders received, `order-blotter`) | Order Blotter (orders sent, `buy-order-blotter`) |
+| Side-only panels (`PANEL_SIDES`) | Order Blotter, Broker Settings | Order Blotter, Companies, Buy-Side Simulator, Executable Test Cases, Test Case Result, FIX Message Template |
+| Side-only API (OEMS) | `/api/orders` (actions, lifecycle, messages), `/api/sessions/{id}/business-config`, `/api/sessions/{id}/report-templates`, `/api/broker-settings`, `/api/users/{id}/preferences` and test runs | `/api/buy-orders` (stage, send, replace, cancel, lifecycle, messages), `/api/order-templates`, `/api/buy-session-templates/…`, `/api/certification-results` (called by the sell-side OEMS) |
+| Side-only API (backend, `SIDE_ROUTES`) | business settings, report templates, Broker Settings, broker actions on orders, `/api/preferences` | `/api/buy-orders`, `/api/order-templates`, `/api/buy-session-templates/…`, `/api/templates`, `/api/test-runs`, `/api/companies` |
 
-Everything else (sessions, users and access, certification, Order Lifecycle, Message Details,
-Security Master, contacts, Error Log) is common. Run both sides as two stacks
+Everything else (sessions, Replay Tool, users and access, certification specifications and test
+cases, test suites, Order Lifecycle, Message Details, Security Master, contacts, Error Log) is
+common. Session Business Configuration exists on both sides with different contents (sell:
+identity tag, Test result URL and key, ER templates; buy: identity tag, result access key,
+message templates). Run both sides as two stacks
 (`docs/deployment/docker.md` 2.6).
 
 ## 2. The setting and how it flows
@@ -50,12 +55,15 @@ flowchart LR
 
 ## 5. Known limitations
 
-1. In BUY_SIDE the OEMS has no order handling yet: an incoming ER or order is logged and dropped
-   (the buy-side order and test-case handling is the next work).
+1. Each side's OEMS ignores the other side's messages: a SELL_SIDE OEMS only logs received
+   ExecutionReports (no street side), a BUY_SIDE OEMS only logs received orders.
 2. The backend and app separation is by convention, not checked by a build tool.
-3. The Buy-Side Simulator puts the username in tag 116; a buy-side setting for the tag is not
-   built (it used to read the sell-side identity tag).
+3. The Buy-Side Simulator's test runs (`/api/test-runs`) answer 503 since the Mock Engine was
+   retired; buy-side orders go through the Buy Order Blotter and the OEMS instead.
 4. Manage Rights still lists the other side's panels when assigning rights (harmless: they never
    show).
 5. Both stacks must use the same `DEPLOYMENT_MODE` for their OEMS and backend; a difference is
    only logged as a warning.
+6. Every OEMS database gets both sides' tables (one set of migrations); the other side's stay
+   empty.
+7. Orders are kept in memory on both sides (lost on restart).
